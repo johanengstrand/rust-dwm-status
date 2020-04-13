@@ -69,28 +69,9 @@ fn update_status(status: &String) {
 }
 
 fn run(_sdone: chan::Sender<()>) {
-    use notify_rust::server::NotificationServer;
-    let mut server = NotificationServer::new();
     let sys = System::new();
-
-    let (sender, receiver) = std::sync::mpsc::channel();
-    std::thread::spawn(move || {
-                           server.start(|notification| sender.send(notification.clone()).unwrap())
-                       });
     let mut banner = String::new();
     loop {
-        let received = receiver.try_recv();
-        if received.is_ok() {
-            let notification = received.unwrap();
-            banner = format!("{} {}", notification.summary, notification.body);
-            update_status(&banner);
-            let max_timeout = 60_000; // milliseconds (1 minute)
-            let mut t = notification.timeout.into();
-            if t > max_timeout || t < 0 {
-                t = max_timeout;
-            }
-            thread::sleep(Duration::from_millis(t as u64));
-        }
         let next_banner = status(&sys);
         if next_banner != banner {
             banner = next_banner;
